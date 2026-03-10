@@ -72,7 +72,13 @@ dist
 | 包含 devDependencies | ✅ | ❌（production only）|
 | 包含原始碼 | ✅ | ❌ |
 
-最關鍵的是**多階段構建**，可以讓最終映像不包含 TypeScript、devDependencies 等開發用工具，大幅縮小體積。
+### 總結
+
+1. 最關鍵的是**多階段構建**，可以讓最終映像不包含 TypeScript、devDependencies 等開發用工具，大幅縮小體積。
+2. 使用 `alpine` 基底映像可以進一步減少大小，但要注意相容性。
+3. `npm ci` 取代 `npm install` 可以確保安裝過程更快且一致。
+4. 加入 `.dockerignore` 可以避免不必要的檔案被複製進映像，保持乾淨。
+
 
 ## 使用 buildx
 
