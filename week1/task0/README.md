@@ -83,21 +83,25 @@ dist
 
 建立完成，檔案結構如下：
 
-
+```
 week1/task0/src/
 ├── index.js        # Express API
 ├── package.json
 ├── Dockerfile
 └── .dockerignore
+```
+
 API 端點：
 
+```
 Method	Path	說明
 GET	/	Hello message
 GET	/health	健康檢查
 GET	/items	取得列表
 POST	/items	新增項目（body: { "name": "..." }）
-建置與執行：
+```
 
+建置與執行：
 
 ### 一般建置
 docker build -t simple-api ./week1/task0/src
@@ -110,11 +114,13 @@ docker run -p 3000:3000 simple-api
 ![local](./src/local.png "Magic Gardens")
 
 ### 多架構建置（buildx）
+```
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   -t norriswu2666/simple-api:latest \
   --push \
   ./week1/task0/src
+```
 
 ### 上傳image到dockerhub上
 
@@ -127,6 +133,6 @@ docker buildx build \
 
 `docker run -d -p 3000:3000 norriswu2666/simple-api:latest`
 
-3. 驗證：curl http://localhost:3000/health
+3. 驗證：`curl http://localhost:3000/health`
 
 ![linux](./src/linux_x64.png "Magic Gardens")
