@@ -205,7 +205,6 @@ Step 2：觀察 web-server pods 的 log
 kubectl logs -l app=nginx --prefix --tail=10
 如果 web-server pods 的 log 出現 access record，代表流量確實從 web-server-new 透過 web-server-svc 轉發過來了，整條鏈路驗證成功：
 
-
 client -> web-server-service-new -> web-server-new -> web-server-svc -> web-server pods
 
 整個流程就是：
