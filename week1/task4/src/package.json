@@ -1,0 +1,25 @@
+{
+  "name": "k8s-pod-lister",
+  "version": "1.0.0",
+  "description": "A Node.js application that calls Kubernetes API to list pods using ServiceAccount authentication",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "RUN_ONCE=true node app.js"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "author": "Kubernetes Learning",
+  "license": "MIT",
+  "keywords": [
+    "kubernetes",
+    "serviceaccount", 
+    "rbac",
+    "pod-listing",
+    "api-client"
+  ]
+}

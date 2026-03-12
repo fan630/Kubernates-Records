@@ -1,0 +1,34 @@
+# Role 定義：允許讀取 default namespace 中的 pods
+# 這個 Role 只允許列出和檢視（get, list） pods，符合最小權限原則
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: pod-reader-role
+  labels:
+    app: k8s-pod-lister
+    component: rbac
+rules:
+- apiGroups: [""]           # "" 表示核心 API group
+  resources: ["pods"]       # 允許存取 pods 資源
+  verbs: ["get", "list"]    # 允許的操作：get（取得單個）、list（列出多個）
+
+---
+# RoleBinding：將 Role 綁定到 ServiceAccount
+# 這樣 pod-reader-sa 就具備了 pod-reader-role 的權限
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pod-reader-binding
+  namespace: default
+  labels:
+    app: k8s-pod-lister
+    component: rbac
+subjects:
+- kind: ServiceAccount          # 綁定的主體類型
+  name: pod-reader-sa          # ServiceAccount 名稱
+  namespace: default           # ServiceAccount 所在 namespace
+roleRef:
+  kind: Role                   # 引用的 Role 類型
+  name: pod-reader-role        # Role 名稱
+  apiGroup: rbac.authorization.k8s.io
