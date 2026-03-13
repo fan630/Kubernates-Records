@@ -12,19 +12,19 @@ metadata:
 spec:
   # 副本數：3
   replicas: 3
-  
+
   # 選擇器：匹配 Pod 標籤
   selector:
     matchLabels:
       app: nginx
-  
+
   # 更新策略
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
-  
+
   # Pod 模板
   template:
     metadata:
@@ -38,13 +38,13 @@ spec:
       - name: nginx
         # 映像檔：nginx:1.14.2
         image: nginx:1.14.2
-        
+
         # 容器埠號：80
         ports:
         - containerPort: 80
           name: http
           protocol: TCP
-        
+
         # 資源限制
         resources:
           requests:
@@ -53,7 +53,7 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "200m"
-        
+
         # 健康檢查 - Liveness Probe
         livenessProbe:
           httpGet:
@@ -63,8 +63,8 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-        
-        # 健康檢查 - Readiness Probe  
+
+        # 健康檢查 - Readiness Probe
         readinessProbe:
           httpGet:
             path: /
@@ -73,33 +73,33 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 1
-        
+
         # 環境變數（可選）
         env:
         - name: NGINX_VERSION
           value: "1.14.2"
         - name: DEPLOYMENT_ENV
           value: "AKS_DEMO"
-        
+
         # 安全上下文
         securityContext:
           runAsNonRoot: false  # nginx 需要 root 權限
           readOnlyRootFilesystem: false
           allowPrivilegeEscalation: false
-        
+
         # Volume 掛載（自定義 nginx 配置）
         volumeMounts:
         - name: nginx-config
           mountPath: /usr/share/nginx/html/index.html
           subPath: index.html
           readOnly: true
-      
+
       # 重啟策略
       restartPolicy: Always
-      
+
       # DNS 配置
       dnsPolicy: ClusterFirst
-      
+
       # Volume 定義
       volumes:
       - name: nginx-config
@@ -108,7 +108,7 @@ spec:
           items:
           - key: index.html
             path: index.html
-      
+
       # 調度配置
       affinity:
         podAntiAffinity:
@@ -137,6 +137,7 @@ data:
     <!DOCTYPE html>
     <html>
     <head>
+        <meta charset="UTF-8">
         <title>🚀 AKS Terraform Demo - Task5</title>
         <style>
             body {

@@ -11,11 +11,11 @@ variable "location" {
   description = "Azure 區域位置"
   type        = string
   default     = "East Asia"
-  
+
   validation {
     condition = contains([
-      "East Asia", "Southeast Asia", "East US", "East US 2", 
-      "West US", "West US 2", "Central US", "West Europe", 
+      "East Asia", "Southeast Asia", "East US", "East US 2",
+      "West US", "West US 2", "Central US", "West Europe",
       "North Europe"
     ], var.location)
     error_message = "Location must be a valid Azure region."
@@ -26,7 +26,7 @@ variable "cluster_name" {
   description = "AKS 集群名稱"
   type        = string
   default     = "aks-terraform-cluster"
-  
+
   validation {
     condition     = length(var.cluster_name) <= 63 && can(regex("^[a-zA-Z0-9-]+$", var.cluster_name))
     error_message = "Cluster name must be 63 characters or less and contain only letters, numbers, and hyphens."
@@ -36,14 +36,14 @@ variable "cluster_name" {
 variable "kubernetes_version" {
   description = "Kubernetes 版本"
   type        = string
-  default     = "1.28.5"
+  default     = "1.35"
 }
 
 variable "node_count" {
   description = "Worker 節點數量"
   type        = number
   default     = 2
-  
+
   validation {
     condition     = var.node_count >= 1 && var.node_count <= 10
     error_message = "Node count must be between 1 and 10."

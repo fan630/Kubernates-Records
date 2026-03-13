@@ -13,21 +13,21 @@ metadata:
     # Azure 特定的 LoadBalancer 註釋
     service.beta.kubernetes.io/azure-load-balancer-resource-group: ""  # 使用節點資源群組
     service.beta.kubernetes.io/azure-pipe-probe-request-path: "/"
-    
+
     # 負載平衡器的其他配置選項
     service.beta.kubernetes.io/azure-load-balancer-health-probe-num-of-probe: "2"
     service.beta.kubernetes.io/azure-load-balancer-health-probe-interval: "5"
-    
+
     # DNS 標籤（可選）
     service.beta.kubernetes.io/azure-dns-label-name: "task5-nginx-demo"
 spec:
   # 服務類型：LoadBalancer
   type: LoadBalancer
-  
+
   # 選擇器：選擇带有 app: nginx 標籤的 Pod
   selector:
     app: nginx
-  
+
   # 端口配置
   ports:
   - name: http
@@ -38,13 +38,13 @@ spec:
     port: 443         # 也預留 HTTPS 端口（可選）
     targetPort: 80    # 目前還是指向 HTTP
     protocol: TCP
-  
+
   # Session affinity（會話親和性）
   sessionAffinity: None
-  
+
   # 外部流量策略
   externalTrafficPolicy: Cluster  # 或 Local（保留來源 IP）
-  
+
   # LoadBalancer 特定配置
   loadBalancerSourceRanges:  # 限制可存取的 IP 範圍（可選，為空表示所有 IP）
   # - "0.0.0.0/0"  # 允許所有 IP
@@ -63,26 +63,26 @@ spec:
   podSelector:
     matchLabels:
       app: nginx
-  
+
   # 允許的流量類型
   policyTypes:
   - Ingress
   - Egress
-  
+
   # 入口流量規則
   ingress:
   - from: []  # 允許所有來源的流量
     ports:
     - protocol: TCP
       port: 80
-  
-  # 出口流量規則  
+
+  # 出口流量規則
   egress:
   - to: []  # 允許到所有目的地的流量
     ports:
     - protocol: TCP
       port: 53    # DNS 查詢
-    - protocol: UDP  
+    - protocol: UDP
       port: 53    # DNS 查詢
   - to: []
     ports:
@@ -108,11 +108,11 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: web-server
-  
+
   # 副本數範圍
   minReplicas: 3
   maxReplicas: 10
-  
+
   # 擴展指標
   metrics:
   - type: Resource
@@ -127,7 +127,7 @@ spec:
       target:
         type: Utilization
         averageUtilization: 80  # 記憶體使用率超過 80% 時擴展
-  
+
   # 擴展行為配置
   behavior:
     scaleUp:
