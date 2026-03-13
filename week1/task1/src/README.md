@@ -151,7 +151,7 @@ Port forward 最常見的情境是：你想臨時看一下某個 pod 或 service
 2. 更新 image 並記錄
 
 ```
-kubectl set image deployment/web-server nginx=nginx:1.27.5
+kubectl edit deployment/web-server
 kubectl annotate deployment/web-server kubernetes.io/change-cause="upgrade to nginx:1.27.5" --overwrite
 ```
 
