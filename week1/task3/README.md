@@ -4,7 +4,13 @@
 閱讀服務探針文件，嘗試了解探針(Probe)的原理及功能
 https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 
-```
+發揮你的創意的時候到了，延續 Task1，對於這個 Nginx Deployment，因為特殊狀況需求，你現在希望可以停止其中一個 Pod 的流量（注意！你並不希望刪除該 Pod 以及關閉該 Pod 上的 Nginx 服務）。
+
+-> 這要使用 Readiness Probe 的功能，讓 Kubernetes 認定這個 Pod 不「就緒」，就不會把流量路由到這個 Pod 上了，但該 Pod 仍然存在並且 Nginx 服務仍在運行。
+
+嘗試用 Probe 解決該問題。
+
+
 ---
 
 ## Kubernetes 三種探針，白話解釋
@@ -64,13 +70,7 @@ https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/configure-livenes
 - **HTTP GET**：打一個 HTTP 請求，回傳 200-399 就算成功
 - **TCP Socket**：嘗試建立 TCP 連線，能連上就算成功  
 - **exec command**：在容器裡執行一個指令，exit code 為 0 就算成功
-```
 
-發揮你的創意的時候到了，延續 Task1，對於這個 Nginx Deployment，因為特殊狀況需求，你現在希望可以停止其中一個 Pod 的流量（注意！你並不希望刪除該 Pod 以及關閉該 Pod 上的 Nginx 服務）。
-
--> 這要使用 Readiness Probe 的功能，讓 Kubernetes 認定這個 Pod 不「就緒」，就不會把流量路由到這個 Pod 上了，但該 Pod 仍然存在並且 Nginx 服務仍在運行。
-
-嘗試用 Probe 解決該問題。
 
 ## 🎯 創意解決方案：使用 Readiness Probe 控制 Pod 流量
 
