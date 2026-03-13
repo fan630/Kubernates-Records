@@ -18,6 +18,7 @@ https://k9scli.io/topics/commands/
 ![img](./img/deployment.png)
 
 使用 :xray deployment 查看 nginx 資源的關係圖。
+-> 沒有這個指令
 
 按下 s 進入容器裡面輸入 ls / 看看檔案系統。
 ![img](./img/container.png)
