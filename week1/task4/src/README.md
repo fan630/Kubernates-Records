@@ -25,35 +25,54 @@ xxx
 ## 步驟拆解
 
 ### 1. 撰寫程式
-- 選擇語言（Python / Node.js 等）
-- 程式邏輯：讀取掛載的 SA Token 與 CA 憑證，呼叫 K8s API `GET /api/v1/namespaces/{namespace}/pods`，將結果格式化成類似 `kubectl get pods` 的表格輸出
+- 使用 Node.js（`app.js`）
+- 讀取 projected volume 掛載的三個檔案：
+  - `/var/run/secrets/kubernetes.io/serviceaccount/token` — SA token（身份憑證）
+  - `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` — CA 憑證（驗證 api-server）
+  - `/var/run/secrets/kubernetes.io/serviceaccount/namespace` — 當前 namespace
+- 用 token 打 `https://kubernetes.default.svc/api/v1/namespaces/{namespace}/pods`
+- 印出所有 pod 名稱
 
 ### 2. 打包成 Docker Image
-- 撰寫 `Dockerfile`
-- Build image：`docker build -t <dockerhub-user>/<image-name>:<tag> .`
-- Push 到 DockerHub：`docker push <dockerhub-user>/<image-name>:<tag>`
+- 撰寫 `Dockerfile`，base image 使用 `node:18-alpine`
+```bash
+docker build -t norriswu2666/norris-test:latest .
+docker push norriswu2666/norris-test:latest
+```
 
 ### 3. 設定 RBAC 權限
-- 建立 `ServiceAccount`
-- 建立 `Role`（允許 `get`、`list` pods）
-- 建立 `RoleBinding`（將 Role 綁定到 ServiceAccount）
+- 在 `rbac.yaml` 中定義三個資源：
+  - `ServiceAccount`：名稱 `pod-lister`
+  - `Role`：允許 `get`、`list` pods
+  - `RoleBinding`：將 Role 綁定到 `pod-lister` ServiceAccount
+```bash
+kubectl apply -f rbac.yaml
+```
 
 ### 4. 建立 Pod（使用 Projected Volume 掛載 SA Token）
-- 撰寫 Pod YAML
-- 使用 `projected volume` 將以下三項掛載進 Pod：
+- 在 `pod-with-projected-volume.yaml` 中，使用 `projected volume` 將以下三項掛載進 Pod：
   - ServiceAccount Token（`serviceAccountToken`）
   - CA 憑證（`configMap: kube-root-ca.crt`）
   - Namespace 資訊（`downwardAPI`）
-- 指定使用剛建立的 ServiceAccount
+- 指定 `serviceAccountName: pod-lister`
+```bash
+kubectl apply -f pod-with-projected-volume.yaml
+```
 
 ### 5. 驗證結果
-- `kubectl logs <pod-name>`
-- 確認 log 中出現類似以下格式的輸出：
-
+```bash
+kubectl logs pod-lister
 ```
-NAME              READY   STATUS    RESTARTS   AGE
-pod-a             1/1     Running   0          10m
-pod-b             2/2     Running   1          5m
+
+實際輸出：
+```
+pod list in default namespace:
+
+k8s-pod-lister
+pod-lister
+web-server-5d6d4f65-8cx7g
+web-server-5d6d4f65-sddf2
+web-server-5d6d4f65-xfhkv
 ```
 
 ---
