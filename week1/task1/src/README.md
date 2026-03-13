@@ -4,12 +4,14 @@
 
 1. 撰寫一個名為 deployment.yaml 的檔案，並用 kubectl 在本地 cluster 創建以下服務。 
 
+```
 類型： Deployment 
 名稱： web-server 
 副本數 (Replicas)： 3 
 標籤 (Labels)： app: nginx 
 映像檔： nginx:1.14.2 
 容器埠號： 80
+```
 
 2. 使用 kubectl get pods -o wide 獲得這 3 個 Pod 的 IP 地址。
 
@@ -27,8 +29,10 @@ web-server-7489fb554f-zsgc8   1/1     Running   0          3m26s   10.244.0.12  
 kubectl get pods -l app=nginx -o jsonpath='{.items[*].metadata.name}' | tr ' ' ','
 ```
 
+抓出來的pods
+```
 web-server-7489fb554f-bf4b2,web-server-7489fb554f-bx8ck,web-server-7489fb554f-zsgc8
-
+```
 
 4. 使用 kubectl exec 進入其中一個 Pod，使用指令驗證網路互通。
 
@@ -44,7 +48,7 @@ kubectl get pods -l app=nginx
 ```bash
 kubectl exec -it <pod-name> -- /bin/bash
 ```
-# 例如：
+
 例如：
 ```bash
 kubectl exec -it web-server-7489fb554f-bf4b2 -- /bin/bash
@@ -67,7 +71,7 @@ curl http://localhost:80
 # 先離開 Pod，查詢其他 Pod IP
 kubectl get pods -l app=nginx -o wide
 
-# 或用 curl 測試 HTTP
+# 用 curl 測試 HTTP
 curl http://10.244.0.10:80
 ```
 
@@ -84,7 +88,7 @@ curl http://web-server.<namespace>.svc.cluster.local
 | `curl localhost:80` | nginx 歡迎頁面 HTML |
 | `curl http://10.244.0.10:80` | nginx 歡迎頁面 HTML |
 
-這樣可以確認 Pod 本身服務正常，以及 Pod 之間的網路互通（East-West traffic）皆無問題。
+這樣可以確認 Pod 本身服務正常，以及 Pod 之間的網路互通（East-West traffic）都沒有問題。
 
 5. 手動刪除其中一個 Pod (kubectl delete pod )，觀察 Deployment 如何自動建立新 Pod。
 
@@ -95,10 +99,10 @@ note
 目的： 在 cluster 內部驗證 Service 有正確轉發流量到 nginx pods。
 
 curl-test pod  -->  Service (ClusterIP)  -->  nginx pods (web-server)
-ClusterIP 只在 cluster 內部 才能存取，從你的 Mac 直接 curl 是不通的。所以需要在 cluster 裡面另外起一個 pod，從這個 pod 去 curl Service 的 ClusterIP，確認 Service 有正確把流量導到後端的 nginx pods。
+ClusterIP 只在 cluster 內部 才能存取，從 Mac 直接 curl 是不通的。所以需要在 cluster 裡面另外起一個 pod，從這個 pod 去 curl Service 的 ClusterIP，確認 Service 有正確把流量導到後端的 nginx pods。
 ```
 
-兩個不同的 pod 都出現了 access log，代表 Service 把請求分發到不同 pod 上了。如果 Service 沒有轉發，nginx pod 的 log 裡根本不會有任何 access record。
+不同的 pod 都出現了 access log，代表 Service 把請求分發到不同 pod 上了。如果 Service 沒有轉發，nginx pod 的 log 裡根本不會有任何 access record。
 
 ```
 [pod/web-server-7489fb554f-qtqlq/nginx] /docker-entrypoint.sh: Configuration complete; ready for start up
@@ -196,16 +200,20 @@ s
 
 Step 1：curl web-server-service-new
 
+```
 kubectl run curl-test --image=curlimages/curl --rm -it --restart=Never -- curl http://web-server-service-new:80
 如果回傳 nginx 歡迎頁面，代表 web-server-new 有正常啟動。
+```
 
 Step 2：觀察 web-server pods 的 log
 
-
+```
 kubectl logs -l app=nginx --prefix --tail=10
 如果 web-server pods 的 log 出現 access record，代表流量確實從 web-server-new 透過 web-server-svc 轉發過來了，整條鏈路驗證成功：
 
 client -> web-server-service-new -> web-server-new -> web-server-svc -> web-server pods
+
+```
 
 整個流程就是：
 

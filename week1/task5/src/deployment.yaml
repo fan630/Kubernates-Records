@@ -1,0 +1,184 @@
+# deployment.yaml - Kubernetes Deployment 配置
+# 根據 Task5 要求創建 nginx 部署
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server
+  labels:
+    app: nginx
+    task: task5-aks-demo
+    environment: production
+spec:
+  # 副本數：3
+  replicas: 3
+  
+  # 選擇器：匹配 Pod 標籤
+  selector:
+    matchLabels:
+      app: nginx
+  
+  # 更新策略
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  
+  # Pod 模板
+  template:
+    metadata:
+      labels:
+        app: nginx
+        version: "1.14.2"
+        task: task5-aks-demo
+    spec:
+      # 容器配置
+      containers:
+      - name: nginx
+        # 映像檔：nginx:1.14.2
+        image: nginx:1.14.2
+        
+        # 容器埠號：80
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        
+        # 資源限制
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        
+        # 健康檢查 - Liveness Probe
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # 健康檢查 - Readiness Probe  
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 1
+        
+        # 環境變數（可選）
+        env:
+        - name: NGINX_VERSION
+          value: "1.14.2"
+        - name: DEPLOYMENT_ENV
+          value: "AKS_DEMO"
+        
+        # 安全上下文
+        securityContext:
+          runAsNonRoot: false  # nginx 需要 root 權限
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+        
+        # Volume 掛載（自定義 nginx 配置）
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+          readOnly: true
+      
+      # 重啟策略
+      restartPolicy: Always
+      
+      # DNS 配置
+      dnsPolicy: ClusterFirst
+      
+      # Volume 定義
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-html
+          items:
+          - key: index.html
+            path: index.html
+      
+      # 調度配置
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - nginx
+              topologyKey: kubernetes.io/hostname
+
+---
+# ConfigMap - 自定義 nginx 首頁
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-html
+  labels:
+    app: nginx
+    task: task5-aks-demo
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🚀 AKS Terraform Demo - Task5</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 40px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            .container {
+                background: rgba(0,0,0,0.2);
+                padding: 30px;
+                border-radius: 10px;
+                text-align: center;
+            }
+            h1 { color: #ffd700; margin-bottom: 20px; }
+            .info { background: rgba(0,0,0,0.3); padding: 15px; margin: 15px 0; border-radius: 5px; }
+            .status { color: #90EE90; font-weight: bold; }
+            code { background: rgba(0,0,0,0.5); padding: 5px; border-radius: 3px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🎉 AKS Terraform 部署成功！</h1>
+            <div class="info">
+                <p><strong>Task:</strong> Task5 - Azure Kubernetes Service</p>
+                <p><strong>Deployment:</strong> web-server</p>
+                <p><strong>Replicas:</strong> 3</p>
+                <p><strong>Image:</strong> nginx:1.14.2</p>
+                <p><strong>Service:</strong> LoadBalancer</p>
+            </div>
+            <div class="info">
+                <p class="status">✅ Nginx 服務運行正常</p>
+                <p class="status">✅ LoadBalancer 正常工作</p>
+                <p class="status">✅ AKS 集群運作中</p>
+            </div>
+            <div class="info">
+                <p><strong>檢查指令:</strong></p>
+                <p><code>kubectl get pods -l app=nginx</code></p>
+                <p><code>kubectl get svc web-server-service</code></p>
+                <p><code>kubectl describe service web-server-service</code></p>
+            </div>
+            <p><em>由 Terraform 自動化部署</em></p>
+        </div>
+    </body>
+    </html>
