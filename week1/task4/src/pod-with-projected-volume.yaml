@@ -1,79 +1,32 @@
-# Pod 配置：使用 Projected Volume 掛載 ServiceAccount token
-# 這是本任務的核心：手動控制 SA token 的掛載方式
 apiVersion: v1
 kind: Pod
 metadata:
-  name: k8s-pod-lister
+  name: pod-lister
   namespace: default
-  labels:
-    app: k8s-pod-lister
-    version: v1.0.0
 spec:
-  # 指定使用的 ServiceAccount（但不自動掛載 token）
-  serviceAccountName: pod-reader-sa
-  automountServiceAccountToken: false      # 禁用自動掛載
-  
+  serviceAccountName: pod-lister
   containers:
-  - name: pod-lister
-    # DockerHub 用戶名: norriswu2666
-    image: norriswu2666/k8s-pod-lister:latest
-    imagePullPolicy: Always
-    
-    # 環境變數設定
-    env:
-    - name: TARGET_NAMESPACE
-      value: "default"                      # 目標 namespace
-    - name: RUN_ONCE
-      value: "false"                        # 持續運行模式
-    - name: KUBERNETES_SERVICE_HOST
-      value: "kubernetes.default.svc.cluster.local"
-    - name: KUBERNETES_SERVICE_PORT
-      value: "443"
-    
-    # 資源限制
-    resources:
-      requests:
-        memory: "64Mi"
-        cpu: "100m"
-      limits:
-        memory: "128Mi"
-        cpu: "200m"
-    
-    # 掛載 ServiceAccount token 的目錄
-    volumeMounts:
-    - name: service-account-token
-      mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      readOnly: true
-  
-  # 關鍵：使用 Projected Volume 來掛載 SA token
+    - name: pod-lister
+      image: norriswu2666/norris-test:latest
+      volumeMounts:
+        - name: sa-token
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          readOnly: true
   volumes:
-  - name: service-account-token
-    projected:                              # Projected Volume 類型
-      sources:
-      - serviceAccountToken:                # ServiceAccount token 來源
-          path: token                       # token 文件路徑
-          expirationSeconds: 3600           # token 過期時間（1小時）
-          # audience: api                   # 選擇性：指定 token 的接收者
-      - configMap:                          # CA 證書來源
-          name: kube-root-ca.crt
-          items:
-          - key: ca.crt
-            path: ca.crt
-      - downwardAPI:                        # namespace 資訊來源
-          items:
-          - path: namespace
-            fieldRef:
-              fieldPath: metadata.namespace
-  
-  # Pod 安全設定
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1001
-    runAsGroup: 1001
-    fsGroup: 1001
-  
-  # 重啟政策
-  restartPolicy: Always
-  
-  # DNS 政策
-  dnsPolicy: ClusterFirst
+    - name: sa-token
+      projected:
+        sources:
+          - serviceAccountToken:
+              path: token
+              expirationSeconds: 3600
+          - configMap:
+              name: kube-root-ca.crt
+              items:
+                - key: ca.crt
+                  path: ca.crt
+          - downwardAPI:
+              items:
+                - path: namespace
+                  fieldRef:
+                    fieldPath: metadata.namespace
+  restartPolicy: Never

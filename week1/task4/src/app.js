@@ -1,79 +1,36 @@
-const k8s = require('@kubernetes/client-node');
-const fs = require('fs');
+const https = require('https'); // 內建模組，用來發 HTTPS 請求
+const fs = require('fs');       // 內建模組，用來讀取檔案
 
-async function main() {
-    console.log('🚀 開始呼叫 Kubernetes API...');
-    
-    try {
-        // 創建 kubernetes client 配置
-        const kc = new k8s.KubeConfig();
-        
-        // 在 Pod 內環境中載入 service account token
-        kc.loadFromCluster();
-        
-        const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-        
-        // 取得目標 namespace（從環境變數或預設為 'default'）
-        const namespace = process.env.TARGET_NAMESPACE || 'default';
-        
-        console.log(`📋 正在取得 namespace '${namespace}' 內的 Pod 列表...`);
-        
-        // 呼叫 Kubernetes API 取得 Pod 列表
-        const response = await k8sApi.listNamespacedPod(namespace);
-        
-        console.log(`\n=== Pod list in ${namespace} namespace ===\n`);
-        
-        if (response.body.items.length === 0) {
-            console.log('❌ No pods found in this namespace.');
-        } else {
-            response.body.items.forEach((pod, index) => {
-                const name = pod.metadata.name;
-                const status = pod.status.phase;
-                const ready = pod.status.conditions
-                    ?.find(c => c.type === 'Ready')
-                    ?.status === 'True' ? '✅' : '❌';
-                
-                console.log(`${index + 1}. ${name} (${status}) ${ready}`);
-            });
-        }
-        
-        console.log(`\n📊 Total: ${response.body.items.length} pod(s) found.\n`);
-        
-        // 額外顯示詳細資訊
-        console.log('=== Detailed Pod Information ===');
-        response.body.items.forEach(pod => {
-            console.log(`Pod: ${pod.metadata.name}`);
-            console.log(`  Status: ${pod.status.phase}`);
-            console.log(`  Node: ${pod.spec.nodeName || 'N/A'}`);
-            console.log(`  Created: ${pod.metadata.creationTimestamp}`);
-            console.log(`  Labels: ${JSON.stringify(pod.metadata.labels || {}, null, 2)}`);
-            console.log('---');
-        });
-        
-    } catch (error) {
-        console.error('❌ Error calling Kubernetes API:', error.message);
-        
-        // 顯示詳細錯誤資訊以便除錯
-        if (error.response) {
-            console.error('Response Status:', error.response.statusCode);
-            console.error('Response Body:', error.response.body);
-        }
-        
-        process.exit(1);
+// 讀取 projected volume 掛載進來的 SA token（Pod 的身份憑證，用來向 api-server 證明自己是誰）
+const token = fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/token', 'utf8').trim();
+
+// 讀取 CA 憑證（用來驗證 api-server 的 TLS 憑證是合法的，避免連到假的 server）
+const ca = fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt');
+
+// 讀取當前 Pod 所在的 namespace（由 projected volume 的 downwardAPI 注入）
+const namespace = fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'utf8').trim();
+
+// 發送 HTTPS GET 請求給 api-server
+const req = https.request({
+  hostname: 'kubernetes.default.svc',              // api-server 在 cluster 內的固定 DNS 名稱
+  path: `/api/v1/namespaces/${namespace}/pods`,     // K8s API 路徑：列出指定 namespace 的 pods
+  headers: { Authorization: `Bearer ${token}` },   // 把 SA token 放進 header，api-server 用這個驗證身份
+  ca,                                               // 告訴 Node.js 信任這個 CA 憑證
+}, (res) => {
+  let data = '';
+  res.on('data', chunk => data += chunk); // 收到回應資料時，持續累加（因為大量資料會分批傳）
+  res.on('end', () => {                   // 所有資料接收完畢後執行
+    const body = JSON.parse(data);        // 把 JSON 字串轉成物件
+    if (!body.items) {                    // 如果沒有 items，代表 api-server 回傳錯誤（例如 403 權限不足）
+      console.error('API error:', JSON.stringify(body, null, 2));
+      process.exit(1);                    // 印出錯誤後結束程式
     }
-}
+    console.log(`pod list in ${namespace} namespace:\n`); // 印出標題
+    body.items.forEach(p => console.log(p.metadata.name)); // 逐一印出每個 pod 的名稱
+  });
+});
 
-// 每 30 秒執行一次，方便觀察
-async function runPeriodically() {
-    await main();
-    
-    console.log('⏰ 等待 30 秒後重新執行...\n');
-    setTimeout(runPeriodically, 30000);
-}
+// 如果網路連線本身發生錯誤（例如 DNS 解析失敗），印出錯誤並結束
+req.on('error', err => { console.error(err.message); process.exit(1); });
 
-// 如果設定了 RUN_ONCE 環境變數，只執行一次
-if (process.env.RUN_ONCE === 'true') {
-    main();
-} else {
-    runPeriodically();
-}
+req.end(); // 送出請求
