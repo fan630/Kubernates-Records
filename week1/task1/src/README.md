@@ -56,7 +56,7 @@ kubectl exec -it web-server-7489fb554f-bf4b2 -- /bin/bash
 
 **3. 在 Pod 內驗證網路互通**
 
-安裝工具（nginx:1.14.2 預設無 curl/ping，需先安裝）：
+方法1: 安裝工具（nginx:1.14.2 預設無 curl/ping，需先安裝）：
 ```bash
 apt-get update && apt-get install -y curl iputils-ping
 ```
@@ -64,6 +64,13 @@ apt-get update && apt-get install -y curl iputils-ping
 驗證本機 nginx 服務正常：
 ```bash
 curl http://localhost:80
+```
+
+方法2: 直接進入其中一個pod, 可以用檔案目錄的方式做呼叫
+```
+kubectl exec -it web-server-5d6d4f65-8cx7g -- /bin/bash     
+root@web-server-5d6d4f65-8cx7g:/# (echo > /dev/tcp/10.244.0.17/80) && echo "OK" || echo "Fail"
+OK
 ```
 
 取得其他 Pod 的 IP 並測試互通：
@@ -141,8 +148,10 @@ Port forward 最常見的情境是：你想臨時看一下某個 pod 或 service
 
 做到分流以NodePort為主
 
-- Port forward 只是你的 terminal session 到 cluster 的一條隧道，流量只過你一台 Mac，沒有辦法分流。
+- Port forward 只是你的 terminal session 到 cluster 的一條隧道，流量只會經過你的單一pod, 即使指令是針對se
+下的也只會在建立時選擇一個pod並固定住，沒有辦法分流。
 - NodePort 背後走的是 kube-proxy，它會把進來的流量透過 iptables 規則分散到所有符合 selector 的 pods，這才是真正的 load balancing。
+
 
 8. 嘗試使用 kubectl edit 更新 deployment 後，觀察 pod 的變化，並嘗試使用 rollback 退版及查看版本變化。
 
