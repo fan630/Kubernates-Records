@@ -191,3 +191,77 @@ redis-cli -h redis-0.redis.default.svc.cluster.local
 **總結：**  
 Headless Service 讓每個 Pod 都有獨立且可預期的 DNS 名稱（如 `redis-0.redis.default.svc.cluster.local`），適合分散式資料庫、主從架構、分片集群等場景，應用程式可直接連線到特定節點，實現資料分片、主從同步或節點健康檢查等功能。
 
+---
+
+## Part 4 - Secret 定義 Redis 使用者資料
+
+嘗試用 Secret 定義 redis 使用者資料，讓 Web Service Pod 透過 ENV 取得連線資訊。
+
+### 為什麼要用 Secret？
+
+密碼不能直接寫在 YAML 裡，否則上傳到 Git 就等於公開密碼。Secret 讓敏感資料與設定分離，Pod 啟動時再從 Secret 取得。
+
+### Secret 內容
+
+`redis-secret.yaml` 定義了三個欄位：
+
+```yaml
+stringData:
+  REDIS_HOST: "redis-0.redis.default.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: "myRedisP@ssw0rd"
+```
+
+> `stringData` 允許直接寫明文，不需要自己 base64 encode。若改用 `data` 屬性，則必須先自行 encode 再填入。兩者最終都以 base64 存進 etcd。
+
+### StatefulSet 如何使用 Secret
+
+`redis-statefulset.yaml` 的 Pod spec 中，透過 `secretKeyRef` 將 Secret 的值注入為環境變數：
+
+```yaml
+env:
+- name: REDIS_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: redis-secret
+      key: REDIS_PASSWORD
+```
+
+啟動指令再引用這個環境變數：
+
+```yaml
+command:
+- redis-server
+- "--requirepass"
+- "$(REDIS_PASSWORD)"
+```
+
+這樣密碼完全不出現在 YAML 裡，只在執行時由 K8s 注入。
+
+### 部署順序
+
+Secret 必須比 StatefulSet 先建立，否則 Pod 啟動時找不到 Secret 會失敗：
+
+```bash
+kubectl apply -f redis-secret.yaml
+kubectl apply -f redis-statefulset.yaml
+```
+
+### 驗證
+
+```bash
+# 確認 Secret 已建立
+kubectl get secret redis-secret
+
+# 確認 Pod 的環境變數有正確注入（不會顯示明文，但可確認 key 存在）
+kubectl exec -it redis-0 -- env | grep REDIS
+```
+
+結過驗證後，Web Service Pod 就能透過環境變數取得 Redis 連線資訊，並成功連線到 Redis。
+
+```
+REDIS_PASSWORD=myRedisP@ssw0rd
+REDIS_VERSION=7.4.8
+REDIS_DOWNLOAD_URL=http://download.redis.io/releases/redis-7.4.8.tar.gz
+REDIS_DOWNLOAD_SHA=f6773cb7d63be236c59c2917a82f1f08e47b77d89b2f0c9f53becb22b8ea4172
+```

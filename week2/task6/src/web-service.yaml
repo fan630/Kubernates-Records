@@ -20,6 +20,9 @@ spec:
         command: ["python3", "-m", "http.server", "8080"]
         ports:
         - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: redis-secret
 
 ---
 apiVersion: v1
