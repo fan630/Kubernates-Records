@@ -1,0 +1,42 @@
+# Gitea Helm Chart values
+# 使用 ClusterIP，由 Ingress 負責對外路由
+
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+
+# 關閉內建 Ingress，我們自己建
+ingress:
+  enabled: false
+
+# Gitea 初始管理員設定
+gitea:
+  admin:
+    username: admin
+    password: "Admin1234!"
+    email: admin@gitea.local
+
+  config:
+    database:
+      DB_TYPE: sqlite3
+      PATH: /data/gitea/gitea.db
+    server:
+      DOMAIN: gitea.local
+      ROOT_URL: "http://gitea.local/"
+      HTTP_PORT: 3000
+
+# 減少資源需求，方便 minikube 跑
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# 使用內建 SQLite 資料庫，不需要額外的 DB pod
+postgresql-ha:
+  enabled: false
+postgresql:
+  enabled: false

@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitea-ingress
+  namespace: task8
+spec:
+  ingressClassName: nginx
+  rules:
+    # 以 hostname 作為路由規則：只有 Host: gitea.local 的請求才會被轉發
+    - host: gitea.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gitea-http
+                port:
+                  number: 3000

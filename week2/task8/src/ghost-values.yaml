@@ -1,0 +1,36 @@
+# Ghost Helm Chart values
+# 停用 Ghost 內建的 ingress（我們自己建）
+# 改用 ClusterIP，讓 Ingress Controller 路由進來
+
+ghostUsername: admin
+ghostPassword: "Admin1234!"
+ghostEmail: admin@ghost.local
+ghostHost: ghost.local
+
+# 改為 ClusterIP，讓流量走 Ingress
+service:
+  type: ClusterIP
+
+# 關閉 Bitnami 內建的 Ingress（我們自己建）
+ingress:
+  enabled: false
+
+# 減少資源需求，方便 minikube 跑
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# MariaDB 資源
+mariadb:
+  primary:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 300m
+        memory: 256Mi
