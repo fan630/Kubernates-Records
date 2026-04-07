@@ -1,7 +1,7 @@
 1. 嘗試使用 Helm Chart 安裝任一開源服務，例如：
 https://artifacthub.io/packages/helm/bitnami/ghost
 
-2. 並且，使用 Nginx Ingress（https://github.com/kubernetes/ingress-nginx），作為 Ingress 將外部流量導向該開源服務。
+2. 並且，使用 Nginx Ingress（https://github.com/kubernetes/ingress-nginx），作為Ingress 將外部流量導向該開源服務。
 
 該 ingress 需根據 hostname(網址) 作為規則，去轉發該流量（可使用 Host Header 去驗證請求）。
 
